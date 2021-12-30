@@ -10,7 +10,7 @@ library(tidyverse)
 #C:\Users\HP\Downloads\SLEEP QUALITY.csv (1)
 
 #RUNNING AN EXISTING IN-BUILT ALGORITHM (APRIORI)
-df<-read.csv(file="C://Users//HP//Downloads//SLEEP QUALITY.csv (2)//SLEEP QUALITY.csv")
+df<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/SLEEP%20QUALITY.csv")
 View(df)
 colnames(df)
 
@@ -41,7 +41,7 @@ inspect(rules)
 #USING INDEXING TO DERIVE NEW CONCLUSIONS
 #Manipulated dataframe is dfs
 
-dfs<-read.csv(file="C://Users//HP//Downloads//SLEEP QUALITY.csv (2)//SLEEP QUALITY.csv")
+dfs<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/SLEEP%20QUALITY.csv")
 View(dfs)
 
 #CALCULATE SLEEP INDEX
