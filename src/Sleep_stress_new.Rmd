@@ -2,12 +2,16 @@
 title: "Sleep stress"
 author: "Riya"
 date: "2023-10-07"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# The source code for analyzing sleep and stress patterns
 
 ### Libraries
 
@@ -15,6 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(arules)
 library(dplyr)
 library(tidyverse)
+library(ggplot2)
+library(tidyr)
 ```
 
 ### Reading and cleaning dataset
@@ -234,15 +240,15 @@ latesleepers<-filter(complete, Bedtime=='1am-3am',
 ### 3.  The number of people diagnosed is not equal to the number of people treated. Why? Patterns?
 
 ```{r}
- treatment_yes <- filter(complete, Treatment=='Yes')
- treatment_yes
- 
- treatment_diag <- filter(treatment_yes, Diagnosed == 'Yes')
- 
- paste0("There are ", count(treatment_yes), 
-        " individuals who seeked treatmeant but only ", 
-        count(treatment_diag), 
-        " of them were diagnosed with a mental illness")
+treatment_yes <- filter(complete, Treatment=='Yes')
+head (treatment_yes)
+
+treatment_diag <- filter(treatment_yes, Diagnosed == 'Yes')
+
+paste0("There are ", count(treatment_yes), 
+      " individuals who seeked treatmeant but only ", 
+      count(treatment_diag), 
+      " of them were diagnosed with a mental illness")
 ```
 
 There is very limited data about people who got treatment, but if we ran a survey just for them, asking more details like time and circumstance of diagnosis, we can draw better conclusions
@@ -263,6 +269,9 @@ The data is limited, but the question has scope and must be explored in a bigger
 #### 1.  Diagnosed v/s undiagnosed individuals
 
 ```{r}
+z<-as.integer(count(diag_yes))
+y<-as.integer(count(dfs)-z)
+
 count_data <- data.frame(
   Category = c("Diagnosed", "Un-diagnosed"),
   Count = c(z, y)
@@ -300,4 +309,46 @@ pie(x, labels = labels, col = colors, main = "Potential for Mental Illness Among
 # Add a legend
 legend("topright", labels, fill = colors, title = "Potential")
 
+```
+
+#### 3. Analysis of late-sleepers : latesleepers showing signs of mental distress
+
+```{r}
+total <- as.integer(count(latesleepers))
+distressed <- as.integer(count(filter(latesleepers, Total > 6)))
+not <- total - distressed
+x <- c(distressed, not)
+labels <- c("Distressed", "Not Distressed")
+
+# Define custom colors
+colors <- c("lightgreen", "lightblue")
+
+# Create the pie chart
+pie(x, labels = labels, col = colors, 
+    main = "Late Sleepers Showing Signs of Mental Distress")
+
+# Add a legend
+legend("topleft", labels, fill = colors, title = "Distress")
+
+```
+
+#### Visualization of diagnosed with respect to gender
+
+```{r}
+gender_frame <- data.frame(final$Diagnosed,final$Gender)
+for(i in gender_frame)
+{
+  gender_frame$Count<-1
+}
+
+colnames(gender_frame)<-c("Diagnosed","Gender","Count")
+#View(gender_frame)
+
+summarised<-gender_frame %>% 
+  group_by(Gender, Diagnosed) %>% 
+  summarise(Total=sum(Count))
+#View(summarised)
+
+ggplot(summarised, aes(fill=Diagnosed, y=Total, x=Gender)) + 
+  geom_bar(stat="identity")
 ```
