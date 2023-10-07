@@ -1,0 +1,62 @@
+---
+title: "Sleep stress"
+author: "Riya"
+date: "2023-10-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r}
+library(arules)
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+dfs<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/SLEEP%20QUALITY.csv")
+#View(dfs)
+colnames(dfs) <- c('Timestamp','Gender','Age','Major','Diagnosed?','Treatment','Bedtime','Fall_asleep','Wakeup_time','Sleep_time','Sleep.30min','Sleep.wakeUpMiddle','Sleep.bathroom','Sleep.snore','Sleep.cold','Sleep.hot','Sleep.badDreams','Sleep.pain','Stress.assignment','Stress.exams','Stress.ketchup','Stress.newPerson','Stress.help','Stress.confronting','Stress.noHelp')
+View(dfs)
+```
+
+
+```{r}
+temp<-dfs #copying dfs into temp to manipulate dfs
+
+# Create a vector of column names you want to factorize
+cols_to_factorize <- c(
+  "Sleep.30min", "Sleep.wakeUpMiddle", "Sleep.bathroom",
+  "Sleep.snore", "Sleep.cold", "Sleep.hot",
+  "Sleep.badDreams", "Sleep.pain"
+)
+
+# Define the levels and labels
+levels_and_labels <- list(
+  levels = c(
+    'Not during the past month', 'Less than once a week',
+    'Once or twice a week', 'Three or more times a week'
+  ),
+  labels = c(1, 2, 3, 4)
+)
+
+# Use a loop to factorize the specified columns
+for (col_name in cols_to_factorize) {
+  dfs[[col_name]] <- factor(dfs[[col_name]], levels_and_labels)
+}
+
+dfs$Fall_asleep = factor(dfs$Fall_asleep, 
+                         levels=c('under 30 minutes','30 minutes','1 hour','1.5 hours', 
+                                  '2 hours', 'More time than that'), 
+                         labels=c(1,2,3,4,5,6))
+dfs$Sleep_time = factor(dfs$Sleep_time, 
+                        levels=c('less than 4 hours of sleep','4-6 hours',
+                                 '7-8 hours','more than 8 hours'), 
+                        labels=c(1,2,3,4))
+View(dfs)
+```
+
