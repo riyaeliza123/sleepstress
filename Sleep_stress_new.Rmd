@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Libraries
+# Libraries
 
 ```{r}
 library(arules)
@@ -17,37 +17,39 @@ library(dplyr)
 library(tidyverse)
 ```
 
+# Reading and cleaning dataset
+
 ```{r}
 dfs<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/SLEEP%20QUALITY.csv")
 #View(dfs)
+
+#Giving new column names
 colnames(dfs) <- c('Timestamp','Gender','Age','Major','Diagnosed?','Treatment','Bedtime','Fall_asleep','Wakeup_time','Sleep_time','Sleep.30min','Sleep.wakeUpMiddle','Sleep.bathroom','Sleep.snore','Sleep.cold','Sleep.hot','Sleep.badDreams','Sleep.pain','Stress.assignment','Stress.exams','Stress.ketchup','Stress.newPerson','Stress.help','Stress.confronting','Stress.noHelp')
-View(dfs)
-```
 
+#copying dfs into temp to manipulate dfs
+temp <- dfs 
 
-```{r}
-temp<-dfs #copying dfs into temp to manipulate dfs
+#Converting categorical columns to numerical categories
 
-# Create a vector of column names you want to factorize
-cols_to_factorize <- c(
-  "Sleep.30min", "Sleep.wakeUpMiddle", "Sleep.bathroom",
-  "Sleep.snore", "Sleep.cold", "Sleep.hot",
-  "Sleep.badDreams", "Sleep.pain"
-)
+levels <- c('Not during the past month','Less than once a week',
+                                'Once or twice a week','Three or more times a week')
+labels <- c(1,2,3,4)
 
-# Define the levels and labels
-levels_and_labels <- list(
-  levels = c(
-    'Not during the past month', 'Less than once a week',
-    'Once or twice a week', 'Three or more times a week'
-  ),
-  labels = c(1, 2, 3, 4)
-)
+dfs$Sleep.30min=factor(dfs$Sleep.30min, levels = levels, labels = labels)
 
-# Use a loop to factorize the specified columns
-for (col_name in cols_to_factorize) {
-  dfs[[col_name]] <- factor(dfs[[col_name]], levels_and_labels)
-}
+dfs$Sleep.wakeUpMiddle=factor(dfs$Sleep.wakeUpMiddle, levels = levels, labels = labels)
+
+dfs$Sleep.bathroom=factor(dfs$Sleep.bathroom, levels = levels, labels = labels)
+
+dfs$Sleep.snore=factor(dfs$Sleep.snore, levels = levels, labels = labels)
+
+dfs$Sleep.cold=factor(dfs$Sleep.cold, levels = levels, labels = labels)
+
+dfs$Sleep.hot=factor(dfs$Sleep.hot, levels = levels, labels = labels)
+
+dfs$Sleep.badDreams=factor(dfs$Sleep.badDreams, levels = levels, labels = labels)
+
+dfs$Sleep.pain=factor(dfs$Sleep.pain, levels = levels, labels = labels)
 
 dfs$Fall_asleep = factor(dfs$Fall_asleep, 
                          levels=c('under 30 minutes','30 minutes','1 hour','1.5 hours', 
@@ -57,6 +59,53 @@ dfs$Sleep_time = factor(dfs$Sleep_time,
                         levels=c('less than 4 hours of sleep','4-6 hours',
                                  '7-8 hours','more than 8 hours'), 
                         labels=c(1,2,3,4))
+```
+
+```{r}
 View(dfs)
 ```
 
+# Creating df.sleep containing all sleep related columns
+
+```{r}
+df.sleep<-data.frame(dfs[8],dfs[10:18])
+#View(df.sleep)
+df.sleep_num <- lapply(df.sleep,as.numeric) #convert to numeric list
+
+df.sleep <- data.frame(df.sleep_num) #convert back to dataframe
+
+df.sleep$INDEX_sleep <- rowSums(df.sleep, na.rm=TRUE)
+View(df.sleep)
+```
+
+# Normalizing INDEX and creating a new column with the normalized values
+
+```{r}
+# Define a function to normalize a column to a specified range
+normalize_to_range <- function(column, min_value, max_value, new_min, new_max) {
+  # Normalize the values to the new range
+  normalized_values <- ((column - min_value) / (max_value - min_value)) * (new_max - new_min) + new_min
+  
+  # Round the normalized values to the nearest integer
+  normalized_values <- round(normalized_values)
+  
+  # Ensure the values are within the specified range (1 to 5)
+  normalized_values <- pmax(pmin(normalized_values, new_max), new_min)
+  
+  return(normalized_values)
+}
+
+# Specify the range for the new values (1 to 5)
+new_min <- 1
+new_max <- 5
+
+# Get the minimum and maximum values of the column you want to normalize
+min_value <- min(df.sleep$INDEX_sleep)
+max_value <- max(df.sleep$INDEX_sleep)
+
+# Normalize the specified column
+df.sleep$normINDEX_sleep <- normalize_to_range(df.sleep$INDEX_sleep, min_value, max_value, new_min, new_max)
+
+View(df.sleep)
+
+```
