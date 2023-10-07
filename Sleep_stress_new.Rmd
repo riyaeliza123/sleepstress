@@ -109,3 +109,40 @@ df.sleep$normINDEX_sleep <- normalize_to_range(df.sleep$INDEX_sleep, min_value, 
 View(df.sleep)
 
 ```
+
+#Encoding data for df.stress
+
+```{r}
+levels = c('not stressed','mild','moderate','severe','very severe')
+labels = c(1, 2, 3, 4, 5)
+
+dfs$Stress.assignment=factor(dfs$Stress.assignment, levels = levels, labels = labels)
+
+dfs$Stress.exams=factor(dfs$Stress.exams, levels = levels, labels = labels)
+
+dfs$Stress.ketchup=factor(dfs$Stress.ketchup, levels = levels, labels = labels)
+
+dfs$Stress.newPerson=factor(dfs$Stress.newPerson, levels = levels, labels = labels)
+
+dfs$Stress.help=factor(dfs$Stress.help, levels = levels, labels = labels)
+
+dfs$Stress.confronting=factor(dfs$Stress.confronting, levels = levels, labels = labels)
+
+dfs$Stress.noHelp=factor(dfs$Stress.noHelp, levels = levels, labels = labels)
+
+```
+
+# Creating the stress dataframe
+
+```{r}
+df.stress <- data.frame(dfs[19:25])
+
+#convert to numeric list
+df.stress_num <- lapply(df.stress,as.numeric) 
+
+#convert back to dataframe
+df.stress <- data.frame(df.stress_num) 
+
+df.stress$INDEX_stress <- rowSums(df.stress, na.rm=TRUE)
+View(df.stress)
+```
