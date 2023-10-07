@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Libraries
+### Libraries
 
 ```{r}
 library(arules)
@@ -17,10 +17,10 @@ library(dplyr)
 library(tidyverse)
 ```
 
-# Reading and cleaning dataset
+### Reading and cleaning dataset
 
 ```{r}
-dfs<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/SLEEP%20QUALITY.csv")
+dfs<-read.csv(file="https://raw.githubusercontent.com/riyaeliza123/sleepstress/main/data/SLEEP_QUALITY.csv")
 #View(dfs)
 
 #Giving new column names
@@ -65,7 +65,7 @@ dfs$Sleep_time = factor(dfs$Sleep_time,
 View(dfs)
 ```
 
-# Creating df.sleep containing all sleep related columns
+### Creating df.sleep containing all sleep related columns
 
 ```{r}
 df.sleep<-data.frame(dfs[8],dfs[10:18])
@@ -78,7 +78,7 @@ df.sleep$INDEX_sleep <- rowSums(df.sleep, na.rm=TRUE)
 View(df.sleep)
 ```
 
-# Normalizing INDEX and creating a new column with the normalized values
+### Normalizing INDEX and creating a new column with the normalized values
 
 ```{r}
 # Define a function to normalize a column to a specified range
@@ -110,7 +110,7 @@ View(df.sleep)
 
 ```
 
-#Encoding data for df.stress
+### Encoding data for df.stress
 
 ```{r}
 levels = c('not stressed','mild','moderate','severe','very severe')
@@ -132,7 +132,7 @@ dfs$Stress.noHelp=factor(dfs$Stress.noHelp, levels = levels, labels = labels)
 
 ```
 
-# Creating the stress dataframe
+### Creating the stress dataframe
 
 ```{r}
 df.stress <- data.frame(dfs[19:25])
@@ -144,5 +144,160 @@ df.stress_num <- lapply(df.stress,as.numeric)
 df.stress <- data.frame(df.stress_num) 
 
 df.stress$INDEX_stress <- rowSums(df.stress, na.rm=TRUE)
-View(df.stress)
+#View(df.stress)
+```
+
+### Normalizing stress INDEX
+
+```{r}
+min_value <- min(df.stress$INDEX_stress)
+max_value <- max(df.stress$INDEX_stress)
+
+# Normalize the specified column
+df.stress$normINDEX_stress <- normalize_to_range(df.stress$INDEX_stress, min_value, max_value, 
+                                                new_min, new_max)
+
+#View(df.stress)
+```
+
+### Merging 2 dataframes to find total index, dataframe is final_index
+
+```{r}
+final_index<-data.frame(df.sleep$normINDEX_sleep, df.stress$normINDEX_stress)
+final_index$TOTAL_INDEX<- rowSums(final_index, na.rm=TRUE)
+```
+
+### Getting final dataframe to derive conclusions
+
+```{r}
+final<-data.frame(dfs[2:4],final_index,dfs[5:6])
+#colnames(final)
+
+colnames(final) <- c('Gender','Age','Major','Sleep_index','Stress_index','Total','Diagnosed','Treatment')
+#View(final)
+
+# Merge sleep_index, stress_index, total_index ---> dataframe called complete
+complete<-data.frame(temp,final[4:6])
+colnames(complete)[colnames(complete) == "Diagnosed."] <- "Diagnosed"
+```
+
+# QUESTIONS FOR CONCLUSIONS:
+
+#### 1. For people who have been professionally diagnosed with a mental illness, what is their stress and sleep pattern? Who else (non-diagnosed) has same pattern as diagnosed people, hence, may indicate possibility of mental illness
+
+```{r}
+ diag_yes <- filter(complete, Diagnosed == 'Yes')
+ #View(diag_yes)
+ #avg total score=?
+ mean = mean(diag_yes$Total) #6.7778
+ 
+ paste0("The mean sleep_stress index of people diagnosed of a mental illness is ", round(mean, 2))
+ 
+ #take a list of non-diagnosed above score 6
+ non_diag_count <- count(filter(complete, Diagnosed == 'No'))
+ notdiag_high <- filter(complete, Diagnosed == 'No', Total > mean)
+ count_notdiag_high = count(notdiag_high)
+ 
+ paste0(count_notdiag_high, " out of ", non_diag_count, 
+        " people have the same stress indices as diagnosed individuals.")
+ paste0("That is, ", round(count_notdiag_high*100/non_diag_count, 2), "% of non diagnosed people show signs of mental distress.")
+```
+
+### 2. Analyse people with irregular sleep patterns (sleep between 1am-3am and sleep for upto 6 hrs)
+
+```{r}
+latesleepers<-filter(complete, Bedtime=='1am-3am', 
+                     Sleep_time %in% c("less than 4 hours of sleep", "4-6 hours"))
+ #View(latesleepers)
+ 
+ total_df = count(complete)
+ 
+ count_latesleep = count(latesleepers)
+ paste0(round(count_latesleep*100/total_df, 2), "% of people have less sleep.")
+ 
+ 
+ #check how many have total index above 6, meaning show signs of mental distress
+ 
+ count_above6 = count(filter(latesleepers,Total>6)) 
+ count_above6_yes = count(filter(latesleepers,Total>6, Diagnosed == "Yes")) 
+ 
+ #Conclusion
+ paste0(count_above6," out of ", count_latesleep, 
+        " show signs of mental distress. i.e; ", 
+        round(count_above6*100/count_latesleep), 
+        "% of late sleepers show signs of mental distress, out of which, ", 
+        round(count_above6_yes*100/count_latesleep), 
+        "% have been diagnosed.")
+ 
+```
+
+### 3.  The number of people diagnosed is not equal to the number of people treated. Why? Patterns?
+
+```{r}
+ treatment_yes <- filter(complete, Treatment=='Yes')
+ treatment_yes
+ 
+ treatment_diag <- filter(treatment_yes, Diagnosed == 'Yes')
+ 
+ paste0("There are ", count(treatment_yes), 
+        " individuals who seeked treatmeant but only ", 
+        count(treatment_diag), 
+        " of them were diagnosed with a mental illness")
+```
+
+There is very limited data about people who got treatment, but if we ran a survey just for them, asking more details like time and circumstance of diagnosis, we can draw better conclusions
+
+### 4. Is there a pattern in people who take more than 2 hrs to fall asleep? What is the demographic like?
+
+```{r}
+moresleep <- filter(complete, Fall_asleep=='More time than that')
+moresleep
+```
+
+The data is limited, but the question has scope and must be explored in a bigger dataset.
+
+## Visualization
+
+### A. Visualization of the statistics calculated
+
+#### 1.  Diagnosed v/s undiagnosed individuals
+
+```{r}
+count_data <- data.frame(
+  Category = c("Diagnosed", "Un-diagnosed"),
+  Count = c(z, y)
+)
+
+# Create a pie chart
+colors <- c("lightgreen", "lightblue")
+pie_labels <- paste(count_data$Category, ": ", count_data$Count) 
+
+pie(count_data$Count,
+    labels = pie_labels,
+    col = colors,
+    main = "Diagnosed vs. Undiagnosed in the Total Strength",
+)
+
+legend("topright", count_data$Category, fill = colors, title = "Category")
+
+```
+
+#### 2. Among undiagnosed people, what percentage show signs of mental illness?
+
+```{r}
+
+# Define the data
+total <- y
+possible_ill <- as.integer(count(notdiag_high))
+fit <- as.integer(total - possible_ill)
+x <- c(fit, possible_ill)
+labels <- c("Low", "High")
+colors <- c("lightgreen", "lightblue")
+
+# Create the pie chart
+pie(x, labels = labels, col = colors, main = "Potential for Mental Illness Among Non-Diagnosed Individuals")
+
+# Add a legend
+legend("topright", labels, fill = colors, title = "Potential")
+
 ```
